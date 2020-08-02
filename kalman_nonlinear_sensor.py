@@ -47,8 +47,8 @@ z = raw_ir1
     #z[n] = x[n] + randn(1) * std_V
     
 # Start with a poor initial estimate of robot’s position
-mean_X_posterior = 10
-var_X_posterior = 10 ** 2
+mean_X_posterior = 0.01
+var_X_posterior = 0.02 ** 2
 
 # Kalman filter
 for n in range(1, Nsteps):
