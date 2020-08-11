@@ -22,12 +22,21 @@ index1, time1, range_1, velocity_command1, raw_ir1, raw_ir2_1, raw_ir3_1, raw_ir
 # Split into columns
 index2, time2, range_2, velocity_command2, raw_ir1, raw_ir2_2, raw_ir3_2, raw_ir4_2, sonar1_2, sonar2_2 = data2.T # Data now segmented
 
-speed = []
-speed.append(0)
+speed_one = []
+speed_one.append(0)
 
 # calculate speed from data
 for i in range(0,(len(time1) - 1)):
-    speed.append((range_1[i + 1] - range_1[i]) / (time1[i + 1] - time1[i]))
+    speed_one.append((range_1[i + 1] - range_1[i]) / (time1[i + 1] - time1[i]))
+    
+speed_two = []
+speed_two.append(0)
+
+# calculate speed from data
+for i in range(0,(len(time2) - 1)):
+    speed_two.append((range_2[i + 1] - range_2[i]) / (time2[i + 1] - time2[i]))
+    
+
 
 # Graph measured speed and commanded speed -- Need to estimate the measured speed dx/dt
 
@@ -40,8 +49,38 @@ plt.ylabel('Speed')
 plt.title('Commanded speed vs time')
 
 plt.subplot(132)
-plt.plot(time1, speed)
+plt.plot(time1, speed_one)
 plt.title('Measured speed vs time')
 plt.ylabel('Speed')
 plt.xlabel('Time (s)')
+
+
+plt.figure(figsize=(12, 5))
+
+plt.subplot(121)
+plt.plot(time2, velocity_command2)
+plt.xlabel('Time (s)')
+plt.ylabel('Speed')
+plt.title('Commanded speed vs time')
+
+plt.subplot(122)
+plt.plot(time2, speed_two)
+plt.title('Measured speed vs time')
+plt.ylabel('Speed')
+plt.xlabel('Time (s)')
+
+
 plt.show()
+
+# Split data into sections so mean speed can be calculated 
+# and compared to commanded speed val = [x for x in velocity_command1 if x == 0]
+# [54, 2793, 3947, 4196, 4498]
+
+control_index_one = []
+index_count_one = 0
+for i in range(0, (len(time1) - 1)):
+    if ((velocity_command1[i + 1] >= 0) and (velocity_command1[i] < 0)) or ((velocity_command1[i + 1] <= 0) and (velocity_command1[i] > 0)):
+        control_index_one.append(index_count_one)
+        index_count_one += 1
+    else:
+        index_count_one += 1
