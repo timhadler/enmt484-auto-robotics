@@ -74,7 +74,7 @@ plt.show()
 
 # Split data into sections so mean speed can be calculated 
 # and compared to commanded speed val = [x for x in velocity_command1 if x == 0]
-# [54, 2793, 3947, 4196, 4498]
+# [1396, 2748, 3319, 3841, 4188, 4438, 4637, 4778]
 
 control_index_one = []
 index_count_one = 0
@@ -84,3 +84,12 @@ for i in range(0, (len(time1) - 1)):
         index_count_one += 1
     else:
         index_count_one += 1
+        
+control_index_two = []
+index_count_two = 0
+for i in range(0, (len(time2) - 1)):
+    if ((velocity_command2[i + 1] >= 0) and (velocity_command2[i] < 0)) or ((velocity_command2[i + 1] <= 0) and (velocity_command2[i] > 0)):
+        control_index_two.append(index_count_two)
+        index_count_two += 1
+    else:
+        index_count_two += 1
