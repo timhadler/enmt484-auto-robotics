@@ -17,20 +17,31 @@ filename = 'training2.csv' # Filename
 data2 = np.loadtxt(filename, delimiter=',', skiprows=1) # Get data2
 
 # Split into columns
-index1, time1, range_1_1, velocity_command1, raw_ir1_1, raw_ir2_1, raw_ir3_1, raw_ir4_1, sonar1_1, sonar2_1 = data1.T # Data now segmented
+index1, time1, range_1, velocity_command1, raw_ir1, raw_ir2_1, raw_ir3_1, raw_ir4_1, sonar1_1, sonar2_1 = data1.T # Data now segmented
 
 # Split into columns
-index2, time2, range_1_2, velocity_command2, raw_ir1_2, raw_ir2_2, raw_ir3_2, raw_ir4_2, sonar1_2, sonar2_2 = data2.T # Data now segmented
+index2, time2, range_2, velocity_command2, raw_ir1, raw_ir2_2, raw_ir3_2, raw_ir4_2, sonar1_2, sonar2_2 = data2.T # Data now segmented
 
-plt.figure(figsize=(8, 7))
+speed = []
+speed.append(0)
 
-plt.subplot(221)
-plt.plot(time1, velocity_command1, '.', alpha=0.5) #raw_ir1_without,time_1
-plt.title('Commanded velocity training 1')
-plt.ylabel('Measurement (V)')
+# calculate speed from data
+for i in range(0,(len(time1) - 1)):
+    speed.append((range_1[i + 1] - range_1[i]) / (time1[i + 1] - time1[i]))
 
-plt.subplot(222)
-plt.plot(time2, velocity_command2, '.', alpha=0.5) #raw_ir1_without,time_1
-plt.title('Commanded velocity training 2')
-plt.ylabel('Measurement (V)')
+# Graph measured speed and commanded speed -- Need to estimate the measured speed dx/dt
+
+plt.figure(figsize=(12, 4))
+
+plt.subplot(131)
+plt.plot(time1, velocity_command1)
+plt.xlabel('Time (s)')
+plt.ylabel('Speed')
+plt.title('Commanded speed vs time')
+
+plt.subplot(132)
+plt.plot(time1, speed)
+plt.title('Measured speed vs time')
+plt.ylabel('Speed')
+plt.xlabel('Time (s)')
 plt.show()
