@@ -144,3 +144,14 @@ for x in control_index_two:
 # Combine data from both calibrations into one dataset
 mean_commanded_combined = mean_commanded_one + mean_commanded_two
 mean_measured_combined = mean_measured_one + mean_measured_two
+
+# Plot commanded vs. measured for motion model
+plt.figure(figsize=(12, 4))
+
+plt.subplot(131)
+plt.plot(mean_commanded_combined, mean_measured_combined)
+plt.xlabel('Commanded speed')
+plt.ylabel('Measured Speed')
+plt.title('Commanded vs Measured Speed')
+
+plt.show()
