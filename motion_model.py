@@ -149,9 +149,28 @@ mean_measured_combined = mean_measured_one + mean_measured_two
 plt.figure(figsize=(12, 4))
 
 plt.subplot(131)
-plt.plot(mean_commanded_combined, mean_measured_combined)
+plt.plot(mean_commanded_combined, mean_measured_combined, '.', alpha=0.2)
 plt.xlabel('Commanded speed')
 plt.ylabel('Measured Speed')
 plt.title('Commanded vs Measured Speed')
 
+plt.show()
+
+# Plot best-fit linear approximation to cammand vs measured data
+x = mean_commanded_combined
+y = mean_measured_combined
+n = len(x)
+gradient = (n*sum(np.transpose(x)*y) - sum(x)*sum(y)) / (n*sum(np.transpose(x)*x) - sum(x)*sum(x))
+intercept = (sum(y)- gradient*sum(x)) / n
+
+X = np.linspace(-0.5, 0.5)
+F1 = ((gradient * X) + intercept)
+
+plt.figure(figsize=(8, 7))
+
+plt.subplot(222)
+plt.plot(x, y, '.', alpha=0.5)
+plt.plot(X, F1, color = "red")
+plt.title('Sonar 2 with outliers')
+plt.ylabel('Measurement (V)')
 plt.show()
