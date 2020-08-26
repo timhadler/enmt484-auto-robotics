@@ -165,6 +165,7 @@ intercept = (sum(y)- gradient*sum(x)) / n
 
 X = np.linspace(-0.5, 0.5)
 F1 = ((gradient * X) + intercept)
+# gradient = 0.8378336109383506
 
 plt.figure(figsize=(8, 7))
 
