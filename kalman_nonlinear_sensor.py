@@ -9,35 +9,40 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 # Load data from calibration.csv file
-filename = 'calibration.csv' # Filename
+filename = 'training1.csv' # Filename
 data = np.loadtxt(filename, delimiter=',', skiprows=1) # Get data
 
 # Split into columns
-index, time, range_1, velocity_command, raw_ir1, raw_ir2, raw_ir3, raw_ir4, sonar1, sonar2 = data.T # Data now segmented
+index, time, range_, velocity_command, raw_ir1, raw_ir2, raw_ir3, raw_ir4, sonar1, sonar2 = data.T # Data now segmented
 
 # Initial position 
 x = 0
 
 # Sensor numerator
-a = 0.24402291
+# a = 0.24402291
 
-# Speed 
-v = 0.02
+# Commanded Speed 
+v = velocity_command
 
 # Number of steps and time-step interval
-Nsteps = 3023
-dt = 0.06
+Nsteps = len(time)
+# dt = 0.06 -- need to calculate dt for each step
 
 # Process and sensor noise standard deviations - need to determine from model
-std_W=0.2*dt
-std_V = 0.1
+# using sonar2
+std_W = 0.0018 # * dt
+std_V = 0.288
 
 # Process and measurement noise variances
 var_W = std_W ** 2
 var_V = std_V ** 2
 
+sensor_grad = 0.6300333587330464
+sensor_inter = 0.8529724004308606
+
 # Motion with additive process noise
-z = raw_ir1
+
+z = sonar2
 #x= zeros(Nsteps)
 #z = zeros(Nsteps)
 #for n in range(1, Nsteps):
@@ -47,13 +52,16 @@ z = raw_ir1
     #z[n] = x[n] + randn(1) * std_V
     
 # Start with a poor initial estimate of robot’s position
-mean_X_posterior = 0.01
-var_X_posterior = 0.02 ** 2
+mean_X_posterior = 0
+var_X_posterior = 0.0018 ** 2
 
 # Kalman filter
 for n in range(1, Nsteps):
     # Calculate mean and variance of prior estimate for position
     # (using motion model)
+    # 
+    # 
+    
     mean_X_prior = mean_X_posterior + v * dt
     var_X_prior = var_X_posterior + var_W
     
