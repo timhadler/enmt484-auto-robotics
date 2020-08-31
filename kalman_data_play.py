@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 # Load data from calibration.csv file
-filename = 'training1.csv' # Filename
+filename = 'training2.csv' # Filename
 data = np.loadtxt(filename, delimiter=',', skiprows=1) # Get data
 
 # Split into columns
@@ -44,11 +44,11 @@ motion_inter = -0.0049023257494812305
 z = sonar2
     
 # Start with a poor initial estimate of robot’s position
-mean_X_posterior = 0.10335912
+mean_X_posterior = 0.10288
 var_X_posterior = 0.0018 ** 2
 
 # Kalman filter
-for n in range(2, 10): #Nsteps
+for n in range(2, Nsteps): #Nsteps
     # Calculate current time increment
     dt = time[n] - time[n - 1]
     
@@ -59,10 +59,11 @@ for n in range(2, 10): #Nsteps
     
     # ML estimate of position from measurement (using sensor2 model)    
     x_infer = ((z[n] - sensor_inter) / sensor_grad)
+    # For non-linear
     #x_infer = (z[n] - 2*(a / mean_X_prior))*(mean_X_prior**2 / (-a))
     
     # Calculate Kalman gain
-    K = ((1 / var_V) / ((1 / var_V) + (1 / var_X_prior)))
+    K = ((1 / var_X_posterior) / ((1 / var_X_prior) + (1 / var_X_posterior)))
     
     # Calculate mean and variance of posterior estimate for position
     mean_X_posterior = mean_X_prior + K * (x_infer - mean_X_prior)
