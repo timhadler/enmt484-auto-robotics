@@ -61,8 +61,9 @@ def motion_model(particle_poses, speed_command, odom_pose, odom_pose_prev, dt):
         #trans_commanded = speed_command[0] * dt
         #rot_commanded = speed_command[1] * dt
 
-        particle_poses[m, 2] += rot1
-        particle_poses[m, 1] -= trans
+        # Update pose
+        particle_poses[m, 0] += odom_pose[0] - odom_pose_prev[0]
+        particle_poses[m, 1] += odom_pose[1] - odom_pose_prev[1]
         particle_poses[m, 2] += rot2
         
         #particle_poses[m, 1] -= 0.1
