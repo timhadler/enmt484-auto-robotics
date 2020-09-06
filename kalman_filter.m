@@ -1,4 +1,4 @@
-function [x_pred] = kalman_filter(data, sensor_data, sensors, sensor_var, motion_var, initial_belief)
+function [x_pred] = kalman_filter(data, sensor_data, sensors, sensor_var, motion, motion_var, initial_belief)
 %kalman_filter, uses kalman filtering, sensor fusion and bayes theorem
 %to predict posiiton x for Robotics Assignment 1 Part A
 %
@@ -27,7 +27,8 @@ for i = 2:n
     dt = time(i) - time(i-1);
     
     % Predict - motion model
-    x_prior = x_posterior + u(i) * dt;
+    x_prior = motion(u(i), x_posterior, dt);
+    %x_prior = x_posterior + u(i) * dt;
     p_prior = p_posterior + motion_var;
     
     % Sensor fusion
@@ -37,8 +38,6 @@ for i = 2:n
         % Sensor reading, converted to distance x
         sensor = sensors{N};
         z = sensor_data(i, N);
-        %x_sensor = solve(sensor(x) == z, x);
-        %x_sensor = (z - d) / c;
         x_sensor = sensor(z);
         
         num = num + x_sensor/sensor_var(N);
@@ -46,11 +45,6 @@ for i = 2:n
     end
     x_sensor = num/den;
     p = 1 / den;
-    
-%     %Update - sensor models
-%     z = sn1(i);
-%     x = (z - d) / c;    % sensor model: z = cx + d + V
-%     p = sensor_sn1_var / c^2;
     
     % Kalman gain
     k = (1/p)/(1/p_prior + 1/p);

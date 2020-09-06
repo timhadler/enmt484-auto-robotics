@@ -24,11 +24,22 @@ sn1_2 = train2(:, 9);
 sn2_2 = train2(:, 10);
 
 % Remove outliers
-sn1_1_rmOut = polyval(polyfit(distance_1, sn1_1, 1), distance_1);
-sn2_1_rmOut = polyval(polyfit(distance_1, sn2_1, 1), distance_1);
+sn1_1_rmOute = filloutliers(sn1_1, 'nearest', 'movmean', 30, 'ThresholdFactor', 0.5);
+sn2_1_rmOut = filloutliers(sn2_1, 'nearest', 'movmean', 25, 'ThresholdFactor', 0.5);
+
+[sn1_1_rmOut, TF] = rmoutliers(sn1_1, 'movmean', 20, 'ThresholdFactor', 0.4);
+
+figure(4)
+scatter(distance_1, sn1_1_rmOute);
+figure(6)
+scatter(distance_1(~TF), sn1_1_rmOut)
+
+figure(5)
+scatter(distance_1, sn1_1);
 
 sn1_2_rmOut = polyval(polyfit(distance_2, sn1_2, 1), distance_2);
 sn2_2_rmOut = polyval(polyfit(distance_2, sn2_2, 1), distance_2);
+
 
 ir1_1_movAvg = movmean(ir1_1, 20);
 ir3_1_movAvg = movmean(ir3_1, 20);
@@ -61,7 +72,7 @@ xlabel("x")
 ylabel("z")
 
 subplot(2, 3, 3)
-plot(distance_1, sn1_1_rmOut)
+%plot(distance_1, sn1_1_rmOut)
 title("Sonar 1")
 xlabel("x")
 ylabel("z")
@@ -112,3 +123,25 @@ xlabel("x")
 ylabel("z")
 
 
+figure(3)
+subplot(2, 2, 3)
+hold on
+%scatter(distance_1, sn1_1_rmOut)
+scatter(distance_1, distance_1)
+hold off
+title('Sonar 1 minus outliers')
+
+subplot(2, 2, 1)
+scatter(distance_1, sn1_1)
+title("Sonar 1")
+
+subplot(2, 2, 4)
+hold on
+scatter(distance_1, sn2_1_rmOut)
+scatter(distance_1, distance_1);
+hold off
+title("Sonar 2 minus outliers")
+
+subplot(2, 2, 2)
+scatter(distance_1, sn2_1)
+title("Sonar 2")
