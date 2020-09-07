@@ -70,7 +70,7 @@ axes = fig.add_subplot(111)
 plot_beacons(axes, beacon_locs, label='Beacons')
 plot_path(axes, slam_poses, '-', label='SLAM')
 # Uncomment to show odometry when debugging
-plot_path(axes, odom_poses, 'b:', label='Odom')
+#plot_path(axes, odom_poses, 'b:', label='Odom')
 
 axes.legend(loc='lower right')
 
@@ -86,13 +86,13 @@ axes.figure.canvas.flush_events()
 
 # TODO: Set this to avoid twirl at start
 # When your algorithm works well set to 0
-start_step = 50
+start_step = 0
 
 # TODO: Number of particles, you may need more or fewer!
 Nparticles = 100
 
 # TODO: How many steps between display updates
-display_steps = 1
+display_steps = 10
 
 # TODO: Set initial belief
 start_pose = slam_poses[start_step]
@@ -120,7 +120,7 @@ for n in range(start_step + 1, Nposes):
 
     # TODO: write motion model function
     
-    poses = motion_model(poses, commands[n-1], odom_poses[n], odom_poses[n - 1],
+    poses = motion_model(beacon_ids, poses, commands[n-1], odom_poses[n], odom_poses[n - 1],
                          t[n] - t[n - 1])
 
     if beacon_visible[n]:

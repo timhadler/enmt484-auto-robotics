@@ -6,109 +6,183 @@ Department of Electrical and Computer Engineering
 University of Canterbury
 """
 
+from __future__ import print_function, division
+from numpy.random import uniform
+import matplotlib
+# May need to comment out following line for MacOS
+matplotlib.use("TkAgg")
+from models import motion_model, sensor_model
+from utils import *
+from plot import *
+from transform import *
 import numpy as np
-from numpy import cos, sin, tan, arccos, arcsin, arctan2, sqrt, exp
-from numpy.random import randn
-from utils import gauss, wraptopi, angle_difference
 import math
 
 
-def motion_model(particle_poses, speed_command, odom_pose, odom_pose_prev, dt):
-    """Apply motion model and return updated array of particle_poses.
+# Load data
 
-    Parameters
-    ----------
+# data is a (many x 13) matrix. Its columns are:
+# time_ns, velocity_command, rotation_command, map_x, map_y, map_theta, odom_x, odom_y, odom_theta,
+# beacon_ids, beacon_x, beacon_y, beacon_theta
+data = np.genfromtxt('data.csv', delimiter=',', skip_header=1)
 
-    particle_poses: an M x 3 array of particle_poses where M is the
-    number of particles.  Each pose is (x, y, theta) where x and y are
-    in metres and theta is in radians.
+# Time in ns
+t = data[:, 0]
 
-    speed_command: a two element array of the current commanded speed
-    vector, (v, omega), where v is the forward speed in m/s and omega
-    is the angular speed in rad/s.
+# Velocity command in m/s, rotation command in rad/s
+commands = data[:, 1:3]
 
-    odom_pose: the current local odometry pose (x, y, theta).
+# Position in map frame, from SLAM (this approximates ground truth)
+slam_poses = data[:, 3:6]
 
-    odom_pose_prev: the previous local odometry pose (x, y, theta).
+# Position in odometry frame, from wheel encoders and gyro
+odom_poses = data[:, 6:9]
 
-    dt is the time step (s).
+# Id and measured position of beacon in camera frame
+beacon_ids = data[:, 9]
+beacon_poses = data[:, 10:13]
+# Use beacon id of -1 if no beacon detected
+beacon_ids[np.isnan(beacon_ids)] = -1
+beacon_ids = beacon_ids.astype(int)
+beacon_visible = beacon_ids >= 0
 
-    Returns
-    -------
-    An M x 3 array of updated particle_poses.
+# map_data is a 16x13 matrix.  Its columns are:
+# beacon_ids, x, y, theta, (9 columns of covariance)
+map_data = np.genfromtxt('beacon_map.csv', delimiter=',', skip_header=1)
 
-    """
+Nbeacons = map_data.shape[0]
+beacon_locs = np.zeros((Nbeacons, 3))
+for m in range(Nbeacons):
+    id = int(map_data[m, 0])
+    beacon_locs[id] = map_data[m, 1:4]
+
+# Remove jumps in the pose history
+slam_poses = clean_poses(slam_poses)
+
+# Transform odometry poses into map frame
+odom_to_map = find_transform(odom_poses[0], slam_poses[0])
+odom_poses = transform_pose(odom_to_map, odom_poses)
+
+plt.ion()
+fig = plt.figure(figsize=(10, 5))
+axes = fig.add_subplot(111)
+
+plot_beacons(axes, beacon_locs, label='Beacons')
+plot_path(axes, slam_poses, '-', label='SLAM')
+# Uncomment to show odometry when debugging
+#plot_path(axes, odom_poses, 'b:', label='Odom')
+
+axes.legend(loc='lower right')
+
+axes.set_xlim([-6, None])
+axes.axis('equal')
+
+# Tweak axes to make plotting better
+axes.invert_yaxis()
+axes.set_xlabel('y')
+axes.set_ylabel('x')
+axes.figure.canvas.draw()
+axes.figure.canvas.flush_events()
+
+# TODO: Set this to avoid twirl at start
+# When your algorithm works well set to 0
+start_step = 0
+
+# TODO: Number of particles, you may need more or fewer!
+Nparticles = 100
+
+# TODO: How many steps between display updates
+display_steps = 10
+
+# TODO: Set initial belief
+start_pose = slam_poses[start_step]
+Xmin = start_pose[0] - 0.1
+Xmax = start_pose[0] + 0.1
+Ymin = start_pose[1] - 0.1
+Ymax = start_pose[1] + 0.1
+Tmin = start_pose[2] - 0.1
+Tmax = start_pose[2] + 0.1
+
+weights = np.ones(Nparticles)
+poses = np.zeros((Nparticles, 3))
+
+for m in range(Nparticles):
+    poses[m] = (uniform(Xmin, Xmax),
+                uniform(Ymin, Ymax),
+                uniform(Tmin, Tmax))
+
+Nposes = odom_poses.shape[0]
+est_poses = np.zeros((Nposes, 3))
+
+display_step_prev = 0
+# Iterate over each timestep.
+for n in range(start_step + 1, Nposes):
+
+    # TODO: write motion model function
     
-    M = particle_poses.shape[0]
-    
-    # TODO.  For each particle calculate its predicted pose plus some
-    # additive error to represent the process noise.  With this demo
-    # code, the particles move in the -y direction with some Gaussian
-    # additive noise in the x direction.  Hint, to start with do not
-    # add much noise.
+    poses = motion_model(beacon_ids, poses, commands[n-1], odom_poses[n], odom_poses[n - 1],
+                         t[n] - t[n - 1])
 
-    for m in range(M):
-        # Add random noise to each position measurement
-        particle_poses[m, 0] += randn(1) * 0.1
-        particle_poses[m, 1] += randn(1) * 0.1
-        particle_poses[m, 2] += randn(1) * 0.1
-        
-        # update particle poses
-        rot1 = math.atan2(odom_pose[1] - odom_pose_prev[1], odom_pose[0] - odom_pose_prev[0]) - odom_pose_prev[2]
-        trans = math.sqrt(((odom_pose_prev[0] - odom_pose[0])**2) + ((odom_pose_prev[1] - odom_pose[1])**2))
-        rot2 = odom_pose[2] - odom_pose_prev[2] - rot1
-        
-        #trans_commanded = speed_command[0] * dt
-        #rot_commanded = speed_command[1] * dt
+    if beacon_visible[n]:
 
-        # Update pose
-        particle_poses[m, 0] += odom_pose[0] - odom_pose_prev[0]
-        particle_poses[m, 1] += odom_pose[1] - odom_pose_prev[1]
-        particle_poses[m, 2] += rot2
-        
-        #particle_poses[m, 1] -= 0.1
-    
-    return particle_poses
+        beacon_id = beacon_ids[n]
+        beacon_loc = beacon_locs[beacon_id]
+        beacon_pose = beacon_poses[n]
 
-def sensor_model(particle_poses, beacon_pose, beacon_loc):
-    """Apply sensor model and return particle weights.
+        # TODO: write sensor model function
+        weights *= sensor_model(poses, beacon_pose, beacon_loc)
 
-    Parameters
-    ----------
-    
-    particle_poses: an M x 3 array of particle_poses (in the map
-    coordinate system) where M is the number of particles.  Each pose
-    is (x, y, theta) where x and y are in metres and theta is in
-    radians.
+        if sum(weights) < 1e-50:
+            print('All weights are close to zero, you are lost...')
+            # TODO: Do something to recover
+            break
 
-    beacon_pose: the measured pose of the beacon (x, y, theta) in the
-    robot's camera coordinate system.
+        if is_degenerate(weights):
+            print('Resampling %d' % n)
+            resample(poses, weights)
 
-    beacon_loc: the pose of the currently visible beacon (x, y, theta)
-    in the map coordinate system.
+    est_poses[n] = poses.mean(axis=0)
 
-    Returns
-    -------
-    An M element array of particle weights.  The weights do not need to be
-    normalised.
+    if n > display_step_prev + display_steps:
+        print(n)
 
-    """
+        # Show particle cloud
+        plot_particles(axes, poses, weights)
 
-    M = particle_poses.shape[0]
-    particle_weights = np.zeros(M)
-    
-    # TODO.  For each particle calculate its weight based on its pose,
-    # the relative beacon pose, and the beacon location.
-    
-    # Code for beacon pose in the map coordinate system
+        # Leave breadcrumbs showing current odometry
+        # plot_path(axes, odom_poses[n], 'k.')
 
-    for m in range(M):
-        
-        beacon_map_x = ((beacon_pose[0]) * math.cos(abs(particle_poses[m, 2] - beacon_pose[2]))) - ((beacon_pose[1]) * math.sin(abs(particle_poses[m, 2] - beacon_pose[2]))) + (beacon_pose[0] - particle_poses[m, 0])
-        beacon_map_y = ((beacon_pose[1]) * math.cos(abs(particle_poses[m, 2] - beacon_pose[2]))) + ((beacon_pose[0]) * math.sin(abs(particle_poses[m, 2] - beacon_pose[2]))) + (beacon_pose[1] - particle_poses[m, 1])
-        beacon_map_theta = beacon_pose[2] + abs(particle_poses[m, 2] - beacon_pose[2])        
-        
-        # Apply particle weights
-        particle_weights[m] = math.sqrt((beacon_map_x ** 2) + (beacon_map_y ** 2))
+        # Show mean estimate
+        plot_path_with_visibility(axes, est_poses[display_step_prev-1 : n+1],
+                                  '-', visibility=beacon_visible[display_step_prev-1 : n+1])
+        display_step_prev = n
 
-    return particle_weights
+# Display final plot
+print('Done, displaying final plot')
+plt.ioff()
+plt.show()
+
+# Save final plot to file
+plot_filename = 'path.pdf'
+print('Saving final plot to', plot_filename)
+
+plot_path(axes, est_poses, 'r-', label='PF')
+axes.legend(loc='lower right')
+
+fig = plt.figure(figsize=(10, 5))
+axes = fig.add_subplot(111)
+
+plot_beacons(axes, beacon_locs, label='Beacons')
+plot_path(axes, slam_poses, 'b-', label='SLAM')
+plot_path(axes, odom_poses, 'b:', label='Odom')
+plot_path(axes, est_poses, 'r-', label='PF')
+axes.legend(loc='lower right')
+
+axes.set_xlim([-6, None])
+axes.axis('equal')
+
+# Tweak axes to make plotting better
+axes.invert_yaxis()
+axes.set_xlabel('y')
+axes.set_ylabel('x')
+fig.savefig(plot_filename, bbox_inches='tight')
