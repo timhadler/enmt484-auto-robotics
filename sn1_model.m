@@ -10,10 +10,12 @@ f2= @(x) abs(0.4314*x - 0.7462);
 
 mean = (z - 0.0484)/0.8890;
 
-if mean < 2
-    var = f1(mean);
-else
-    var = f2(mean);
-end
+% if mean < 2
+%     var = f1(mean);
+% else
+%     var = f2(mean);
+% end
+
+var = 0.015583*mean^2 - 0.013599*mean+0.0029669;
 
 end

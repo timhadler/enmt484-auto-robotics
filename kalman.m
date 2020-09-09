@@ -58,6 +58,7 @@ for i = 2:n
         elseif (N == 2)
             z = sn2(i);
             [x_sensor, var_s] = sn2_model(z);
+            d = 5;
         end
         
         num = num + x_sensor/var_s;

@@ -31,6 +31,7 @@ pm = (pm_1 + pm_2) ./ 2;
 % velocityModel_1 = @(u) p_1(1)*u + p_1(2);
 % velocityModel_2 = @(u) p_2(1)*u + p_2(2);
 velocityModel = @(u) pm(1)*u + pm(2);
+mModel = @(x_p, u, dt) x_p + (pm(1)*u + pm(2))*dt; 
 
 
 % Find motion model variance
@@ -40,7 +41,8 @@ var_2 = find_variance(u_2, velocityModel(u_2), window);
 
 % Fit single linear line to variance
 pv = polyfit(abs(u_1), var_1, 1);
-varModel = @(u) pv(1)*u + pv(2);
+pv = polyfit(abs(u_1), var_1, 2);
+varModel = @(u) pv(1)*u.^2 + pv(2)*u + pv(3);
 
 % % 2 linear curves to fit variance
 % p1 = polyfit(abs(u_1(3894:4055)), var_1(3894:4055), 1);

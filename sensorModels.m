@@ -39,6 +39,17 @@ sn2_z = @(x) p(1)*x+p(2);
 sn2_x = @(z) (z-p(2))/p(1);
 ["sn2(x) model parameters:" p]
 
+
+% Ir sensors
+syms x
+a0 = [2, 1, 1, 0.5];
+%f = @(a, xdata) a(1)./(a(2) + a(3)*xdata.^(a(4)));
+f = @(a, xdata) a(1)./(a(2) + a(3)*xdata.^(a(4)));
+p = lsqcurvefit(f, [1 1 1 1], x_c(1:1000), ir3_c(1:1000));
+
+
+
+
 window = 10;
 % var_sn1 = find_variance(sn1_c, sn1_z(x_c), window);
 % var_sn2 = find_variance(sn2_c, sn2_z(x_c), window);
@@ -46,12 +57,16 @@ var_sn1 = find_variance(x_c, sn1_x(x_c), window);
 var_sn2 = find_variance(x_c, sn2_x(x_c), window);
 
 % Find variance models
-p = polyfit(x_c, var_sn1, 1);
-varModel_sn1 = @(x) p(1)*x + p(2);
+% p = polyfit(x_c, var_sn1, 1);
+% varModel_sn1 = @(x) p(1)*x + p(2);
+p= polyfit(x_c, var_sn1, 2);
+varModel_sn1 = @(x)p(1)*x.^2+p(2)*x+p(3);
 ["sn1 variance parameters:" p]
 
-p = polyfit(x_c, var_sn2, 1);
-varModel_sn2 = @(x) p(1)*x + p(2);
+% p = polyfit(x_c, var_sn2, 1);
+% varModel_sn2 = @(x) p(1)*x + p(2);
+p= polyfit(x_c, var_sn2, 2);
+varModel_sn2 = @(x)p(1)*x.^2+p(2)*x+p(3);
 ["sn2 variance parameters:" p]
 
 %Plotting
