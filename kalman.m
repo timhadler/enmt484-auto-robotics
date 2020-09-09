@@ -50,7 +50,7 @@ for i = 2:n
     % Sensor fusion
     num = 0;
     den = 0;
-    for N = 1:2
+    for N = 1:3
         % Use sensor models to find x from sensor reading z
         if (N == 1)
             z = sn1(i);
@@ -58,6 +58,11 @@ for i = 2:n
         elseif (N == 2)
             z = sn2(i);
             [x_sensor, var_s] = sn2_model(z);
+            
+        elseif (N == 3)
+        % Code for additional non-linear sensor
+          z = ir1(i)
+          [x_sensor, var_s] = ir1_model(z);
         end
         
         num = num + x_sensor/var_s;
