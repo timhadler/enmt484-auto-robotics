@@ -3,121 +3,90 @@ clc, clear, close all;
 
 train1 = readmatrix("training1.csv");
 train2 = readmatrix("training2.csv");
-cal = readmatrix("calibration.csv");
 test = readmatrix("test.csv");
 
 [idx_1, t_1, x_1, u_1, ir1_1, ir2_1, ir3_1, ir4_1, sn1_1, sn2_1] = split_data(train1);
 [idx_2, t_2, x_2, u_2, ir1_2, ir2_2, ir3_2, ir4_2, sn1_2, sn2_2] = split_data(train2);
-[idx_c, t_c, x_c, u_c, ir1_c, ir2_c, ir3_c, ir4_c, sn1_c, sn2_c] = split_data(cal);
+[idx_t, t_t, x_t, u_t, ir1_t, ir2_t, ir3_t, ir4_t, sn1_t, sn2_t] = split_data(test);
 
-%sn1 = filloutliers(sn1, 'next', 'movmean', 25, 'ThresholdFactor', 0.5);
-%sn2 = filloutliers(sn2, 'next', 'movmean', 25, 'ThresholdFactor', 0.5);
 
-% Motion model
-% Calculate measured velocity
-mVel_1 = zeros(length(t_1), 1);
-mVel_2 = zeros(length(t_2), 1);
+% Which data set to use
+dataSet = 1;
 
-for i = 1:length(t_1)-1
-    mVel_1(i) = (x_1(i+1) - x_1(i)) /(t_1(i+1)-t_1(i));
+if (dataSet == 1)
+    time = t_1;
+    u = u_1;
+    x = x_1;
+    sn1 = sn1_1;
+    sn2 = sn2_1;
+elseif (dataSet == 2)
+    time = t_2;
+    u = u_2;
+    x = x_2;
+    sn1 = sn1_2;
+    sn2 = sn2_2;
+elseif (dataSet == 3)
+    time = t_t;
+    u = u_t;
+    sn1 = sn1_t;
+    sn2 = sn2_t;
 end
 
-for i = 1:length(t_2)-1
-    mVel_2(i) = (x_2(i+1) - x_2(i)) /(t_2(i+1)-t_2(i));
+%Initiial belief
+x_posterior = 0;
+p_posterior = 0.01;
+n = length(time);       % Data set length
+
+x_kal = zeros(n, 1);    % Predicted x values from kalman filter
+k = zeros(length(time), 1);        % Kalman gain
+x_kal(1) = x_posterior;
+for i = 2:n
+    dt = time(i) - time(i-1);
+    
+    % Predict - motion model
+    [x_prior, var_m] = motion_model(x_posterior, u(i), dt);
+    p_prior = p_posterior + var_m;
+    
+    % Sensor fusion
+    num = 0;
+    den = 0;
+    for N = 1:2
+        % Use sensor models to find x from sensor reading z
+        if (N == 1)
+            z = sn1(i);
+            [x_sensor, var_s] = sn1_model(z);
+        elseif (N == 2)
+            z = sn2(i);
+            [x_sensor, var_s] = sn2_model(z);
+        end
+        
+        num = num + x_sensor/var_s;
+        den = den + 1/var_s;
+    end
+    x_sensor = num/den;
+    p = 1 / den;
+    
+    % Kalman gain
+    k(i) = (1/p)/(1/p_prior + 1/p);
+    
+    % Bayes theorem
+    x_posterior = k(i)*x_sensor + (1-k(i))*x_prior;
+    p_posterior = 1/(1/p_prior + 1/p);
+
+    x_kal(i) = x_posterior;
 end
 
-% Find a velocity model
-% Fit both datasets to linear line
-% Average the identified parameters
-p_1 = polyfit(u_1, mVel_1, 1);
-p_2 = polyfit(u_2, mVel_2, 1);
-p = (p_1 + p_2) ./ 2;
-velocityModel = @(u) p(1)*u + p(2);
-
-% Find motion model variance
-window = 10;    % Looked at modeled var against measured var to find good window
-var_m1 = find_variance(u_1, velocityModel(u_1), window);
-var_m2 = find_variance(u_2, velocityModel(u_2), window);
-
-% figure(1)
-% hold on
-% plot(t_1, u_1)
-% plot(t_1, velocityModel(u_1))
-% hold off
-% 
-% figure(2)
-% plot(t_1, var_m1)
-% 
-% figure(3)
-% hold on
-% plot(t_2, u_2)
-% plot(t_2, velocityModel(u_2))
-% hold off
-% 
-% figure(4)
-% plot(t_2, var_m2)
-
-% figure(5)
-% scatter(u_1, var_m1)
-
-p_1 = polyfit(u_1, var_m1, 2);
-p_2 = polyfit(u_2, var_m2, 2);
-p = (p_1 + p_2) / 2;
-varModel_1 = @(u) p_1(1)*u.^2 + p_1(2)*u + p_1(3);
-varModel_2 = @(u) p_2(1)*u.^2 + p_2(2)*u + p_2(3);
-varModel = @(u) p(1)*u.^2 + p(2)*u + p(3);
-% figure(5)
-% hold on
-% plot(t_1, varModel(u_1))
-% plot(t_1, var_m1)
-% legend('modeled', 'measured')
-% hold off
-% figure(6)
-% hold on
-% plot(t_2, varModel(u_2))
-% plot(t_2, var_m2)
-% legend('modeled', 'measured')
-% hold off
-
-% Put this in function script
-motionModel = @(x_prev, u, dt) x_prev + u*dt + varModel(u);
-function [mean, var] = motionModel_f(x_prev, u, dt)
-mean = x_prev + u*dt;
-var = varModel(u);
-end
-
-[mean_m, var_m] = motionModel(x_1(25), u_1(25), (t_1(25)-t_1(24)));
-
-% Sensor models
-%sn1_model z = 0.9183x + 0.0446;
-sn1_x = @(zi) (zi - 0.03)/0.9183;
-sn1_var = 0.8851;
-
-%sn2_model z = 1.007x - 0.0141
-sn2_x = @(zi) (zi - 0.02)/1.007;
-sn2_var = 1.1002;
-
-% Motion model - Xn = Xn-1 + udt + W
-motion_var = 0.0018;
-
-% Parameters for kalman filter function
-kalman_data = [time cVel];
-motion = motionModel;
-initial_belief = [distance_x(1) 0.1];
-% Defines the sensors to be used in the filter, make sure the order 
-% is the same in each list
-sensor_data = [sn1];
-sensors = {sn1_x};
-sensor_var = [sn1_var];
-
-predicted_x = kalman_filter(kalman_data, sensor_data, sensors, sensor_var, motion, motion_var, initial_belief);
-
-% Plot results
+% Plot kalman prediction
 figure(1)
 hold on
-scatter(time, distance_x)
-scatter(time, predicted_x)
-legend('Actual x', 'Predicted x')
+scatter(time, x)
+scatter(time, x_kal)
+legend('Actual x', 'Kalman x')
 xlabel('Time (s)')
 ylabel('Distance x (m)')
 hold off
+
+% Plot kalman gain
+figure(2)
+plot(time, k);
+title('Kalman Gain')
