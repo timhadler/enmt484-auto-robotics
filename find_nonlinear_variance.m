@@ -32,5 +32,15 @@ for i=1:length(t_c)
     end
 end
 
+window = 10;
 
+% var_ir2 = find_variance(sn1_c, sn1_z(x_c), window);
+var_ir1 = find_variance(x_c, sn1_x(x_c), window);
 
+% Plot fitted sensor models
+figure(7)
+hold on
+scatter(x_c, ir1_c)
+plot(x_c, ir1_z(x_c))
+title('Fitted sn1')
+hold off
