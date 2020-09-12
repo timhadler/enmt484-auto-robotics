@@ -1,6 +1,5 @@
 """Particle filter demonstration program.
-Joseph Green and Tim Hadler, Sept 2020 -- ENMT482
-Based on code by:
+
 M.P. Hayes and M.J. Edwards,
 Department of Electrical and Computer Engineering
 University of Canterbury
@@ -16,7 +15,6 @@ from utils import *
 from plot import *
 from transform import *
 import numpy as np
-import math
 
 
 # Load data
@@ -70,7 +68,7 @@ axes = fig.add_subplot(111)
 plot_beacons(axes, beacon_locs, label='Beacons')
 plot_path(axes, slam_poses, '-', label='SLAM')
 # Uncomment to show odometry when debugging
-#plot_path(axes, odom_poses, 'b:', label='Odom')
+plot_path(axes, odom_poses, 'b:', label='Odom')
 
 axes.legend(loc='lower right')
 
@@ -89,7 +87,7 @@ axes.figure.canvas.flush_events()
 start_step = 0
 
 # TODO: Number of particles, you may need more or fewer!
-Nparticles = 100
+Nparticles = 50
 
 # TODO: How many steps between display updates
 display_steps = 10
@@ -119,8 +117,7 @@ display_step_prev = 0
 for n in range(start_step + 1, Nposes):
 
     # TODO: write motion model function
-    
-    poses = motion_model(beacon_ids, poses, commands[n-1], odom_poses[n], odom_poses[n - 1],
+    poses = motion_model(poses, commands[n-1], odom_poses[n], odom_poses[n - 1],
                          t[n] - t[n - 1])
 
     if beacon_visible[n]:
@@ -135,7 +132,8 @@ for n in range(start_step + 1, Nposes):
         if sum(weights) < 1e-50:
             print('All weights are close to zero, you are lost...')
             # TODO: Do something to recover
-            break
+            weights = np.ones(Nparticles)
+            #break
 
         if is_degenerate(weights):
             print('Resampling %d' % n)
@@ -150,7 +148,7 @@ for n in range(start_step + 1, Nposes):
         plot_particles(axes, poses, weights)
 
         # Leave breadcrumbs showing current odometry
-        # plot_path(axes, odom_poses[n], 'k.')
+        plot_path(axes, odom_poses[n], 'k.')
 
         # Show mean estimate
         plot_path_with_visibility(axes, est_poses[display_step_prev-1 : n+1],
