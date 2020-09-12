@@ -11,7 +11,7 @@ test = readmatrix("test.csv");
 
 
 % Which data set to use
-dataSet = 1;
+dataSet = 2;
 
 if (dataSet == 1)
     time = t_1;
@@ -19,17 +19,20 @@ if (dataSet == 1)
     x = x_1;
     sn1 = sn1_1;
     sn2 = sn2_1;
+    ir3 = ir3_1;
 elseif (dataSet == 2)
     time = t_2;
     u = u_2;
     x = x_2;
     sn1 = sn1_2;
     sn2 = sn2_2;
+    ir3 = ir3_2;
 elseif (dataSet == 3)
     time = t_t;
     u = u_t;
     sn1 = sn1_t;
     sn2 = sn2_t;
+    ir3 = ir3_t;
 end
 
 %Initiial belief
@@ -54,15 +57,15 @@ for i = 2:n
         % Use sensor models to find x from sensor reading z
         if (N == 1)
             z = sn1(i);
-            [x_sensor, var_s] = sn1_model(z);
+            [x_sensor, var_s] = sn1_model(z, x_posterior);
         elseif (N == 2)
             z = sn2(i);
-            [x_sensor, var_s] = sn2_model(z);
+            [x_sensor, var_s] = sn2_model(z, x_posterior);
             
         elseif (N == 3)
         % Code for additional non-linear sensor
-          z = ir1(i);
-          [x_sensor, var_s] = ir1_model(z);
+            z = ir3(i);
+            [x_sensor, var_s] = ir3_model(z, x_prior);
         end
         
         num = num + x_sensor/var_s;
@@ -84,8 +87,8 @@ end
 % Plot kalman prediction
 figure(1)
 hold on
-scatter(time, x)
 scatter(time, x_kal)
+scatter(time, x)
 legend('Actual x', 'Kalman x')
 xlabel('Time (s)')
 ylabel('Distance x (m)')

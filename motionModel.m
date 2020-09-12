@@ -25,36 +25,26 @@ end
 % Find a velocity model
 % Fit both measured velocities to commanded velocity with a linear model
 % Average the identified parameters for final velocity model
-pm_1 = polyfit(u_1, mVel_1, 1);
-pm_2 = polyfit(u_2, mVel_2, 1);
-pm = (pm_1 + pm_2) ./ 2;
-% velocityModel_1 = @(u) p_1(1)*u + p_1(2);
-% velocityModel_2 = @(u) p_2(1)*u + p_2(2);
+p_1 = polyfit(u_1, mVel_1, 1);
+p_2 = polyfit(u_2, mVel_2, 1);
+pm = (p_1 + p_2) ./ 2;
+
 velocityModel = @(u) pm(1)*u + pm(2);
 mModel = @(x_p, u, dt) x_p + (pm(1)*u + pm(2))*dt; 
 
 
-% Find motion model variance
+% Find velocity model variance
 window = 10;    % Looked at modeled var against measured var to find good window
 var_1 = find_variance(u_1, velocityModel(u_1), window);
 var_2 = find_variance(u_2, velocityModel(u_2), window);
 
-% Fit single linear line to variance
-pv = polyfit(abs(u_1), var_1, 1);
-pv = polyfit(abs(u_1), var_1, 2);
+% Fit single non-linear curve to variance
+p_1 = polyfit(abs(u_1), var_1, 2);
+p_2 = polyfit(abs(u_2), var_2, 2);
+pv = (p_1 + p_2) ./ 2;
+
 varModel = @(u) pv(1)*u.^2 + pv(2)*u + pv(3);
 
-% % 2 linear curves to fit variance
-% p1 = polyfit(abs(u_1(3894:4055)), var_1(3894:4055), 1);
-% p2 = polyfit(abs(u_1(4513:4574)), var_1(4513:4574), 1);
-% 
-%  
-% p_1 = polyfit(abs(u_1), var_1, 1);
-% p_2 = polyfit(abs(u_2), var_2, 1);
-% p = (p_1 + p_2) / 2;
-% varModel_1 = @(u) p_1(1)*u + p_1(2);
-% varModel_2 = @(u) p_2(1)*u + p_2(2);
-% varModel_m = @(u) (p(1)*u + p(2));
 
 
 ["Motion model mean parameters:" pm]
