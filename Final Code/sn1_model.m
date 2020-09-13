@@ -14,9 +14,9 @@ f2= @(x) abs(6.5920*x - 14.3937);
 mean = (z - b)/a;
 
 if x_p < 2.1315
-    var = f1(x_p);
+    var = 1/a^2*f1(x_p);
 else
-    var = f2(x_p);
+    var = 1/a^2*f2(x_p);
 end
 
 

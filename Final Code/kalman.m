@@ -11,7 +11,7 @@ test = readmatrix("test.csv");
 
 
 % Which data set to use
-dataSet = 1;
+dataSet = 3;
 
 if (dataSet == 1)
     time = t_1;

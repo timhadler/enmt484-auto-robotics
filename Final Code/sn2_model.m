@@ -13,7 +13,7 @@ mean = (z - b)/a;
 if x_p < 0.3
     var=25;
 else 
-    var = f2(x_p);
+    var = 1/a^2*f2(x_p);
 end
 
 
