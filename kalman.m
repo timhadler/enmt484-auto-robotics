@@ -37,12 +37,14 @@ end
 
 %Initiial belief
 x_posterior = 0;
-p_posterior = 0.01;
+p_posterior = 0.001;
 n = length(time);       % Data set length
 
 x_kal = zeros(n, 1);    % Predicted x values from kalman filter
+p_kal = zeros(n, 1);    % Variance of the kalman filter
 k = zeros(length(time), 1);        % Kalman gain
 x_kal(1) = x_posterior;
+p_kal(1) = p_posterior;
 for i = 2:n
     dt = time(i) - time(i-1);
     
@@ -81,6 +83,7 @@ for i = 2:n
     x_posterior = k(i)*x_sensor + (1-k(i))*x_prior;
     p_posterior = 1/(1/p_prior + 1/p);
 
+    p_kal(i) = p_posterior;
     x_kal(i) = x_posterior;
 end
 
@@ -88,8 +91,10 @@ end
 figure(1)
 hold on
 scatter(time, x_kal)
-scatter(time, x)
-legend('Actual x', 'Kalman x')
+if (dataSet ~= 3)
+    scatter(time, x)
+    legend('Actual x', 'Kalman x')
+end
 xlabel('Time (s)')
 ylabel('Distance x (m)')
 hold off
@@ -100,3 +105,9 @@ plot(time, k);
 %title('Kalman Gain')
 xlabel('Time (s)')
 ylabel('Kalman Gain')
+
+% Plot kalman variance
+figure(3)
+scatter(time, p_kal)
+legend('x', 'variance')
+xlabel('Time (s)')
